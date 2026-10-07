@@ -213,3 +213,16 @@ export async function getTexts(): Promise<Record<string, TextBlock>> {
   const { data } = await db.from("site_texts").select("key, kicker, title, body");
   return mergeTexts(data ?? []);
 }
+
+export type SiteSettings = { logo_url: string; logo_light_url: string };
+
+export async function getSettings(): Promise<SiteSettings> {
+  "use cache";
+  cacheLife("minutes");
+  const empty: SiteSettings = { logo_url: "", logo_light_url: "" };
+  const db = publicClient();
+  if (!db) return empty;
+  const { data } = await db.from("site_settings").select("key, value");
+  const map = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]));
+  return { logo_url: map.logo_url ?? "", logo_light_url: map.logo_light_url ?? "" };
+}

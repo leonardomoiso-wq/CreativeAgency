@@ -44,6 +44,8 @@ segnaposto (tra parentesi quadre).
    foto diventa una scheda: l'etichetta si scrive direttamente sotto l'immagine,
    gli altri dati in *Dettagli*. Si riordina trascinando le schede e si cambia una
    foto trascinandone un'altra sopra. Le foto grandi vengono ridotte da sole.
+   In **Logo** carichi il logo (SVG o PNG trasparente) e, se serve, una
+   versione chiara per i fondi scuri. Senza logo il sito mostra il nome in lettere.
    In **Testi** si cambiano i testi del sito su tre livelli: occhiello, titolo, testo.
 2. Le candidature arrivano in **Candidature e gruppi**. Per ognuna imposti lo
    stato e scrivi un messaggio: il brand li vede nel suo pannello.

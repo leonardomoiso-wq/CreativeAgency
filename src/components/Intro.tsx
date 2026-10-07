@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { SettingsCtx } from "./Logo";
+import { useContext, useState } from "react";
 
 const WORDS = ["Location", "Brand", "Moodboard", "Casting", "Shooting"];
 
@@ -12,6 +13,8 @@ const WORDS = ["Location", "Brand", "Moodboard", "Casting", "Shooting"];
 export function Intro({ name }: { name: string }) {
   const [gone, setGone] = useState(false);
   const path = usePathname();
+  const settings = useContext(SettingsCtx);
+  const logo = settings.logo_light_url || settings.logo_url;
   // niente intro nelle aree di lavoro
   if (gone || path.startsWith("/admin") || path.startsWith("/brand")) return null;
 
@@ -28,13 +31,20 @@ export function Intro({ name }: { name: string }) {
         <span>Open Call</span>
         <span>Giornate di shooting condivise</span>
       </div>
-      <div className="intro__name">
-        {name.split("").map((ch, i) => (
-          <span key={i} style={{ "--i": i } as React.CSSProperties}>
-            {ch === " " ? " " : ch}
-          </span>
-        ))}
-      </div>
+      {logo ? (
+        <div className="intro__logo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logo} alt="" />
+        </div>
+      ) : (
+        <div className="intro__name">
+          {name.split("").map((ch, i) => (
+            <span key={i} style={{ "--i": i } as React.CSSProperties}>
+              {ch === " " ? "\u00a0" : ch}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="intro__bottom">
         <div className="intro__words mono">
           <div>

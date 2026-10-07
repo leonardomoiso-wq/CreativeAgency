@@ -383,6 +383,24 @@ drop policy if exists "texts admin write" on public.site_texts;
 create policy "texts admin write" on public.site_texts
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+-- ---------- impostazioni del sito (logo) ----------
+
+create table if not exists public.site_settings (
+  key text primary key check (char_length(key) <= 80),
+  value text not null default '' check (char_length(value) <= 2000),
+  updated_at timestamptz not null default now()
+);
+
+grant select on public.site_settings to anon, authenticated;
+grant all on public.site_settings to authenticated;
+alter table public.site_settings enable row level security;
+
+drop policy if exists "settings public read" on public.site_settings;
+create policy "settings public read" on public.site_settings for select using (true);
+drop policy if exists "settings admin write" on public.site_settings;
+create policy "settings admin write" on public.site_settings
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
 -- ---------- contenuti iniziali (solo se le tabelle sono vuote) ----------
 
 do $$

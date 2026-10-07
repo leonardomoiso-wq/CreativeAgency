@@ -204,7 +204,19 @@ export function MediaCenter({
   );
 }
 
-function DropZone({ busy, onFiles }: { busy: string; onFiles: (f: File[]) => void }) {
+export function DropZone({
+  busy,
+  onFiles,
+  title = "Trascina qui le immagini",
+  hint = "oppure clicca per sceglierle · più foto insieme diventano più schede · il nome del file diventa l'etichetta, poi la cambi",
+  multiple = true,
+}: {
+  busy: string;
+  onFiles: (f: File[]) => void;
+  title?: string;
+  hint?: string;
+  multiple?: boolean;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   return (
@@ -233,20 +245,15 @@ function DropZone({ busy, onFiles }: { busy: string; onFiles: (f: File[]) => voi
         ref={input}
         type="file"
         accept="image/*"
-        multiple
+        multiple={multiple}
         hidden
         onChange={(e) => {
           onFiles(Array.from(e.target.files ?? []));
           e.target.value = "";
         }}
       />
-      <strong>{busy || (over ? "Lascia qui le immagini" : "Trascina qui le immagini")}</strong>
-      {!busy && (
-        <span className="muted">
-          oppure clicca per sceglierle · più foto insieme diventano più schede ·
-          il nome del file diventa l&apos;etichetta, poi la cambi
-        </span>
-      )}
+      <strong>{busy || (over ? "Lascia qui" : title)}</strong>
+      {!busy && <span className="muted">{hint}</span>}
     </div>
   );
 }

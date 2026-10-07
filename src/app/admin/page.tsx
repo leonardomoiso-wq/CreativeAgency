@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SITE_NAME } from "@/lib/site";
+import { Logo } from "@/components/Logo";
 import { browserClient, missingEnv } from "@/lib/supabase";
 import { MediaCenter } from "@/components/admin/MediaCenter";
 import { TextsAdmin } from "@/components/admin/TextsAdmin";
+import { LogoAdmin } from "@/components/admin/LogoAdmin";
 import { ApplicationsAdmin } from "@/components/admin/ApplicationsAdmin";
 import { OpenCallAdmin } from "@/components/admin/OpenCallAdmin";
 import { AccessAdmin } from "@/components/admin/AccessAdmin";
@@ -15,6 +16,7 @@ type Access = "loading" | "anon" | "recovery" | "denied" | "admin";
 
 const TABS = [
   { id: "media", label: "Immagini" },
+  { id: "logo", label: "Logo" },
   { id: "testi", label: "Testi" },
   { id: "candidature", label: "Candidature" },
   { id: "opencall", label: "Open Call" },
@@ -146,6 +148,7 @@ export default function MediaCenterPage() {
         </p>
       )}
       {tab === "media" && <MediaCenter db={db} notify={notify} />}
+      {tab === "logo" && <LogoAdmin db={db} notify={notify} />}
       {tab === "testi" && <TextsAdmin db={db} notify={notify} />}
       {tab === "candidature" && <ApplicationsAdmin db={db} run={run} />}
       {tab === "opencall" && <OpenCallAdmin db={db} run={run} />}
@@ -257,7 +260,7 @@ function Shell({ children, bar }: { children: React.ReactNode; bar?: React.React
   return (
     <div className="mc-shell">
       <header className="mc-top">
-        <Link href="/" className="wordmark">{SITE_NAME}</Link>
+        <Link href="/" className="wordmark"><Logo light /></Link>
         <span className="mono mc-top__label">Media center</span>
         {bar}
       </header>

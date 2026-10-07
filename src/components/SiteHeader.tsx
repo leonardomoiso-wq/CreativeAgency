@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SITE_NAME } from "@/lib/site";
+import { Logo } from "./Logo";
 
 const LINKS = [
   { href: "/#come", label: "Come funziona" },
@@ -13,7 +13,7 @@ export function SiteHeader({ current }: { current?: string }) {
   return (
     <header className="site-header">
       <Link href="/" className="wordmark">
-        {SITE_NAME}
+        <Logo />
       </Link>
       <nav className="site-nav mono" aria-label="Principale">
         {LINKS.map((l) => (
