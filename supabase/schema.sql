@@ -412,3 +412,6 @@ begin
       ('[NOME]', 'Produzione e rapporto con i brand', '[Bio di chi coordina la produzione.]', 2);
   end if;
 end $$;
+
+-- Fa vedere subito le tabelle nuove al sito (altrimenti: "schema cache").
+notify pgrst, 'reload schema';

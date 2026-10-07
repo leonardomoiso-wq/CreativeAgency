@@ -99,7 +99,12 @@ export default function MediaCenterPage() {
     );
   }
 
-  const notify = (msg: string) => setMessage(msg);
+  // Tabelle mancanti = schema.sql non rieseguito dopo l'aggiornamento.
+  const explain = (msg: string) =>
+    /schema cache|does not exist/i.test(msg)
+      ? "Il database non è aggiornato: in Supabase apri SQL Editor, incolla tutto supabase/schema.sql ed esegui. Poi ricarica questa pagina."
+      : msg;
+  const notify = (msg: string) => setMessage(explain(msg));
   const run: Run = async (label, fn) => {
     setMessage("Salvataggio…");
     try {
@@ -107,7 +112,7 @@ export default function MediaCenterPage() {
       if (res && res.error) throw res.error;
       setMessage(`${label}: fatto. Sul sito entro un minuto.`);
     } catch (e) {
-      setMessage(`${label}: errore. ${(e as { message?: string })?.message ?? ""}`);
+      setMessage(explain(`${label}: errore. ${(e as { message?: string })?.message ?? ""}`));
     }
   };
 
