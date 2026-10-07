@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { SiteHeader } from "@/components/SiteHeader";
-import { browserClient, MEDIA_BUCKET } from "@/lib/supabase";
+import { BoardAdmin } from "@/components/admin/BoardAdmin";
+import { ApplicationsAdmin } from "@/components/admin/ApplicationsAdmin";
+import { Field, type Run } from "@/components/admin/shared";
+import { browserClient } from "@/lib/supabase";
+import { uploadImage } from "@/lib/upload";
 import {
   KIND_LABEL,
   type Category,
@@ -14,25 +17,7 @@ import {
   type TeamMember,
 } from "@/lib/data";
 
-type Booking = {
-  id: string;
-  brand_name: string;
-  email: string;
-  website: string | null;
-  message: string | null;
-  category_id: string;
-  created_at: string;
-};
-
 type Access = "loading" | "anon" | "denied" | "admin";
-
-async function uploadImage(db: SupabaseClient, folder: string, file: File) {
-  const safe = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-");
-  const path = `${folder}/${Date.now()}-${safe}`;
-  const { error } = await db.storage.from(MEDIA_BUCKET).upload(path, file);
-  if (error) throw error;
-  return db.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
-}
 
 function creditsToText(credits: Credit[]) {
   return credits.map((c) => `${c.title} | ${c.role} | ${c.year}`).join("\n");
@@ -56,7 +41,6 @@ export default function AdminPage() {
     null,
   );
   const [categories, setCategories] = useState<Category[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -70,12 +54,8 @@ export default function AdminPage() {
       .maybeSingle();
     setCall(c);
     if (c) {
-      const [cats, bks] = await Promise.all([
-        db.from("categories").select("*").eq("open_call_id", c.id).order("position"),
-        db.from("bookings").select("*").eq("open_call_id", c.id).order("created_at", { ascending: false }),
-      ]);
+      const cats = await db.from("categories").select("*").eq("open_call_id", c.id).order("position");
       setCategories((cats.data ?? []) as Category[]);
-      setBookings((bks.data ?? []) as Booking[]);
     }
     const [t, p] = await Promise.all([
       db.from("team_members").select("*").order("position"),
@@ -109,7 +89,7 @@ export default function AdminPage() {
   }, [db, load]);
 
   /** Esegue un'operazione, mostra l'esito e ricarica i dati. */
-  async function run(label: string, fn: () => Promise<{ error: unknown } | void>) {
+  const run: Run = async (label, fn) => {
     setMessage("Salvataggio…");
     try {
       const res = await fn();
@@ -120,7 +100,7 @@ export default function AdminPage() {
       const text = e instanceof Error ? e.message : (e as { message?: string })?.message;
       setMessage(`${label}: errore. ${text ?? ""}`);
     }
-  }
+  };
 
   if (!db) {
     return (
@@ -146,7 +126,10 @@ export default function AdminPage() {
         <p className="notice">
           L&apos;account {email} non ha ancora accesso alla gestione del sito.
         </p>
-        <button className="btn btn--ghost" onClick={() => db.auth.signOut()}>Esci</button>
+        <div className="row" style={{ gap: 12 }}>
+          <Link href="/brand" className="btn">Vai al pannello brand</Link>
+          <button className="btn btn--ghost" onClick={() => db.auth.signOut()}>Esci</button>
+        </div>
       </Shell>
     );
   }
@@ -161,8 +144,19 @@ export default function AdminPage() {
       </div>
       {message && <p className="notice" role="status">{message}</p>}
 
+      <nav className="admin__toc mono" aria-label="Sezioni">
+        <a href="#a-candidature">Candidature e gruppi</a>
+        <a href="#a-bacheca">Bacheca</a>
+        <a href="#a-opencall">Open Call</a>
+        <a href="#a-portfolio">Portfolio</a>
+        <a href="#a-team">Team</a>
+      </nav>
+
+      <ApplicationsAdmin db={db} run={run} />
+      <BoardAdmin db={db} run={run} />
+
       {/* ---------- Open Call ---------- */}
-      <section className="admin__block">
+      <section className="admin__block" id="a-opencall">
         <h2 className="h-card">Open Call</h2>
         {!call ? (
           <p className="muted">
@@ -255,32 +249,13 @@ export default function AdminPage() {
                 <button className="btn btn--ghost">Aggiungi categoria</button>
               </form>
 
-              <div className="mono">Richieste ricevute ({bookings.length})</div>
-              <div className="admin__list">
-                {bookings.map((b) => (
-                  <div className="admin__item" key={b.id}>
-                    <div>
-                      <strong>{b.brand_name}</strong> ·{" "}
-                      {categories.find((c) => c.id === b.category_id)?.name ?? "—"}
-                      <br />
-                      <a href={`mailto:${b.email}`}>{b.email}</a>
-                      {b.website ? ` · ${b.website}` : ""}
-                      {b.message ? <div className="muted">{b.message}</div> : null}
-                    </div>
-                    <span className="mono">
-                      {new Date(b.created_at).toLocaleDateString("it-IT")}
-                    </span>
-                  </div>
-                ))}
-                {bookings.length === 0 && <p className="muted">Ancora nessuna richiesta.</p>}
-              </div>
             </div>
           </div>
         )}
       </section>
 
       {/* ---------- Portfolio ---------- */}
-      <section className="admin__block">
+      <section className="admin__block" id="a-portfolio">
         <h2 className="h-card">Portfolio</h2>
         <div className="admin__grid">
           <form
@@ -352,7 +327,7 @@ export default function AdminPage() {
       </section>
 
       {/* ---------- Team ---------- */}
-      <section className="admin__block">
+      <section className="admin__block" id="a-team">
         <h2 className="h-card">Team</h2>
         <div className="admin__grid">
           {team.map((m) => (
@@ -440,24 +415,5 @@ function Shell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
     </>
-  );
-}
-
-function Field({
-  label,
-  name,
-  id,
-  ...rest
-}: {
-  label: string;
-  name: string;
-  id?: string;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
-  const fieldId = id ?? `f-${name}`;
-  return (
-    <div className="field">
-      <label htmlFor={fieldId}>{label}</label>
-      <input id={fieldId} name={name} className="input" {...rest} />
-    </div>
   );
 }

@@ -176,12 +176,188 @@ create policy "media public read" on storage.objects
 drop policy if exists "media admin insert" on storage.objects;
 create policy "media admin insert" on storage.objects
   for insert to authenticated with check (bucket_id = 'media' and public.is_admin());
+drop policy if exists "media brand moodboard insert" on storage.objects;
+create policy "media brand moodboard insert" on storage.objects
+  for insert to authenticated with check (
+    bucket_id = 'media'
+    and (storage.foldername(name))[1] = 'moodboard'
+    and (storage.foldername(name))[2] = auth.uid()::text
+  );
 drop policy if exists "media admin update" on storage.objects;
 create policy "media admin update" on storage.objects
   for update to authenticated using (bucket_id = 'media' and public.is_admin());
 drop policy if exists "media admin delete" on storage.objects;
 create policy "media admin delete" on storage.objects
   for delete to authenticated using (bucket_id = 'media' and public.is_admin());
+
+-- ---------- bacheca: location, agenzie, volti, crew ----------
+
+create table if not exists public.board_items (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'location'
+    check (kind in ('location', 'agenzia', 'volto', 'crew', 'backstage')),
+  title text not null,
+  subtitle text not null default '',
+  city text not null default '',
+  description text not null default '',
+  image_url text,
+  link text,
+  available boolean not null default true,
+  position int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- ---------- candidature dei brand ----------
+
+-- Un gruppo è l'abbinamento creativo: i brand che scattano insieme,
+-- in una location, con una moodboard comune.
+create table if not exists public.brand_groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  concept text not null default '',
+  location_id uuid references public.board_items (id) on delete set null,
+  date_label text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.applications (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  email text not null check (char_length(email) between 3 and 320),
+  kind text not null default 'brand'
+    check (kind in ('brand', 'negozio', 'atelier', 'designer')),
+  brand_name text not null check (char_length(brand_name) between 1 and 200),
+  city text not null default '' check (char_length(city) <= 200),
+  website text not null default '' check (char_length(website) <= 500),
+  category text not null default '' check (char_length(category) <= 200),
+  pieces text not null default '' check (char_length(pieces) <= 200),
+  keywords text not null default '' check (char_length(keywords) <= 500),
+  location_ids uuid[] not null default '{}',
+  message text not null default '' check (char_length(message) <= 4000),
+  status text not null default 'ricevuta'
+    check (status in ('ricevuta', 'valutazione', 'abbinamento', 'moodboard',
+                      'confermata', 'scattata', 'consegnata', 'non_selezionata')),
+  group_id uuid references public.brand_groups (id) on delete set null,
+  team_note text not null default ''
+);
+
+create index if not exists applications_email_idx on public.applications (lower(email));
+create index if not exists applications_group_idx on public.applications (group_id);
+
+create table if not exists public.moodboard_items (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.brand_groups (id) on delete cascade,
+  application_id uuid references public.applications (id) on delete cascade,
+  image_url text not null,
+  caption text not null default '' check (char_length(caption) <= 300),
+  created_at timestamptz not null default now()
+);
+
+-- Email di chi ha fatto login (minuscola), per collegare le candidature.
+create or replace function public.my_email()
+returns text
+language sql
+stable
+as $$
+  select lower(coalesce(auth.jwt() ->> 'email', ''));
+$$;
+
+create or replace function public.in_group(g uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.applications
+    where group_id = g and lower(email) = public.my_email()
+  );
+$$;
+
+create or replace function public.owns_application(a uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.applications
+    where id = a and lower(email) = public.my_email()
+  );
+$$;
+
+-- I brand dello stesso gruppo: solo nome, tipo, categoria e sito.
+create or replace function public.group_brands(g uuid)
+returns table (brand_name text, kind text, category text, website text, city text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select a.brand_name, a.kind, a.category, a.website, a.city
+  from public.applications a
+  where a.group_id = g
+    and a.status <> 'non_selezionata'
+    and (public.in_group(g) or public.is_admin())
+  order by a.created_at;
+$$;
+
+grant select on public.board_items to anon, authenticated;
+grant insert on public.applications to anon, authenticated;
+grant all on public.board_items, public.brand_groups, public.applications, public.moodboard_items to authenticated;
+grant execute on function public.group_brands(uuid) to authenticated;
+
+alter table public.board_items enable row level security;
+alter table public.brand_groups enable row level security;
+alter table public.applications enable row level security;
+alter table public.moodboard_items enable row level security;
+
+drop policy if exists "board public read" on public.board_items;
+create policy "board public read" on public.board_items for select using (true);
+drop policy if exists "board admin write" on public.board_items;
+create policy "board admin write" on public.board_items
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- candidature: chiunque ne invia una, il brand legge le proprie, il team tutto
+drop policy if exists "applications anyone insert" on public.applications;
+create policy "applications anyone insert" on public.applications
+  for insert to anon, authenticated
+  with check (status = 'ricevuta' and group_id is null and team_note = '');
+drop policy if exists "applications read own" on public.applications;
+create policy "applications read own" on public.applications
+  for select to authenticated using (lower(email) = public.my_email());
+drop policy if exists "applications admin all" on public.applications;
+create policy "applications admin all" on public.applications
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "groups read members" on public.brand_groups;
+create policy "groups read members" on public.brand_groups
+  for select to authenticated using (public.in_group(id) or public.is_admin());
+drop policy if exists "groups admin write" on public.brand_groups;
+create policy "groups admin write" on public.brand_groups
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- moodboard: i brand del gruppo la vedono e aggiungono i propri riferimenti
+drop policy if exists "moodboard read members" on public.moodboard_items;
+create policy "moodboard read members" on public.moodboard_items
+  for select to authenticated using (public.in_group(group_id) or public.is_admin());
+drop policy if exists "moodboard brand insert" on public.moodboard_items;
+create policy "moodboard brand insert" on public.moodboard_items
+  for insert to authenticated
+  with check (
+    application_id is not null
+    and public.owns_application(application_id)
+    and public.in_group(group_id)
+  );
+drop policy if exists "moodboard brand delete" on public.moodboard_items;
+create policy "moodboard brand delete" on public.moodboard_items
+  for delete to authenticated
+  using (application_id is not null and public.owns_application(application_id));
+drop policy if exists "moodboard admin all" on public.moodboard_items;
+create policy "moodboard admin all" on public.moodboard_items
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- ---------- contenuti iniziali (solo se le tabelle sono vuote) ----------
 

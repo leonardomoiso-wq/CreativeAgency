@@ -2,10 +2,11 @@ import Link from "next/link";
 import { SITE_NAME } from "@/lib/site";
 
 const LINKS = [
-  { href: "/", label: "Open Call" },
+  { href: "/#come", label: "Come funziona" },
+  { href: "/bacheca", label: "Bacheca" },
   { href: "/team", label: "Team" },
   { href: "/portfolio", label: "Portfolio" },
-  { href: "/login", label: "Area riservata" },
+  { href: "/login", label: "Area brand" },
 ];
 
 export function SiteHeader({ current }: { current?: string }) {
@@ -24,6 +25,9 @@ export function SiteHeader({ current }: { current?: string }) {
             {l.label}
           </Link>
         ))}
+        <Link href="/candidatura" className="btn btn--small btn--accent">
+          Candidati
+        </Link>
       </nav>
     </header>
   );

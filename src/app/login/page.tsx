@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { browserClient } from "@/lib/supabase";
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setStatus("sending");
     const { error: err } = await db.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/admin` },
+      options: { emailRedirectTo: `${window.location.origin}/brand` },
     });
     if (err) {
       setStatus("error");
@@ -36,8 +37,8 @@ export default function LoginPage() {
     <>
       <SiteHeader current="/login" />
       <main className="section section--hero">
-        <div className="mono">Area riservata</div>
-        <h1 className="h-section">Accedi</h1>
+        <div className="mono">Area brand</div>
+        <h1 className="h-section">Entra nel tuo pannello</h1>
         {status === "sent" ? (
           <p className="notice" role="status">
             Ti abbiamo inviato un link di accesso. Aprilo da questo dispositivo
@@ -46,8 +47,8 @@ export default function LoginPage() {
         ) : (
           <form className="form" onSubmit={submit}>
             <p className="muted">
-              Inserisci la tua email: ricevi un link per entrare, senza
-              password.
+              Usa l&apos;email con cui ti sei candidato: ricevi un link per
+              entrare, senza password. Lo stesso accesso vale per il team.
             </p>
             <div className="field">
               <label htmlFor="login-email">Email</label>
@@ -63,6 +64,9 @@ export default function LoginPage() {
             <button className="btn" disabled={status === "sending"}>
               {status === "sending" ? "Invio in corso…" : "Invia il link"}
             </button>
+            <Link href="/candidatura" className="link">
+              Non ti sei ancora candidato? Inizia da qui
+            </Link>
             {status === "error" && (
               <p className="notice notice--error" role="alert">
                 {error}

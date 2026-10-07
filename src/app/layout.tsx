@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import "./globals.css";
 import { SITE_NAME } from "@/lib/site";
+import { Intro } from "@/components/Intro";
+import { RevealObserver } from "@/components/RevealObserver";
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} — Open Call`,
   description:
-    "Produzioni condivise per brand indipendenti: concept, team e casting di una produzione editoriale, con posti limitati e costi accessibili.",
+    "Giornate di shooting condivise per brand indipendenti, negozi e atelier: una location, più brand abbinati, una direzione creativa comune.",
 };
+
+// Prima del primo paint: attiva le animazioni (se l'utente non le ha
+// ridotte) e salta l'intro se è già stata vista in questa sessione.
+const BOOT = `(function(){var d=document.documentElement;try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('motion');if(sessionStorage.getItem('intro'))d.classList.add('intro-seen');else sessionStorage.setItem('intro','1')}catch(e){}})()`;
 
 export default function RootLayout({
   children,
@@ -14,8 +21,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="it">
+    <html lang="it" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: BOOT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -28,7 +36,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Intro name={SITE_NAME} />
+        <ViewTransition>{children}</ViewTransition>
+        <RevealObserver />
+      </body>
     </html>
   );
 }

@@ -1,6 +1,8 @@
 import { cacheLife } from "next/cache";
 import { publicClient } from "./supabase";
 import type {
+  BoardItem,
+  BoardKind,
   Category,
   Credit,
   OpenCall,
@@ -96,6 +98,36 @@ const FALLBACK_PROJECTS: Project[] = FALLBACK_KINDS.map((kind) => ({
   image_url: null,
 }));
 
+const FALLBACK_BOARD_SPEC: [BoardKind, string, string][] = [
+  ["location", "[VILLA SUL LAGO]", "[COMO]"],
+  ["location", "[EX FILANDA]", "[MILANO]"],
+  ["location", "[MASSERIA]", "[PUGLIA]"],
+  ["location", "[STUDIO CON LUCE NATURALE]", "[TORINO]"],
+  ["agenzia", "[AGENZIA MODELLE]", "[MILANO]"],
+  ["agenzia", "[AGENZIA MODELLE]", "[ROMA]"],
+  ["volto", "[NOME MODELLA]", "[AGENZIA]"],
+  ["volto", "[NOME MODELLO]", "[AGENZIA]"],
+  ["crew", "[MAKE-UP ARTIST]", "[CITTÀ]"],
+  ["crew", "[HAIR STYLIST]", "[CITTÀ]"],
+  ["backstage", "[BACKSTAGE — SET 01]", "[LOCATION]"],
+  ["agenzia", "[AGENZIA MODELLE]", "[FIRENZE]"],
+];
+
+const FALLBACK_BOARD: BoardItem[] = FALLBACK_BOARD_SPEC.map(
+  ([kind, title, city], i) => ({
+    id: null,
+    kind,
+    title,
+    subtitle: "",
+    city,
+    description: "",
+    image_url: null,
+    link: null,
+    available: true,
+    position: i,
+  }),
+);
+
 /* ---------- letture ---------- */
 
 export async function getOpenCall(): Promise<{
@@ -147,4 +179,18 @@ export async function getProjects(): Promise<Project[]> {
     .order("created_at", { ascending: false });
   if (!data || data.length === 0) return FALLBACK_PROJECTS;
   return data as Project[];
+}
+
+export async function getBoard(): Promise<BoardItem[]> {
+  "use cache";
+  cacheLife("minutes");
+  const db = publicClient();
+  if (!db) return FALLBACK_BOARD;
+  const { data } = await db
+    .from("board_items")
+    .select("*")
+    .order("position")
+    .order("created_at", { ascending: false });
+  if (!data || data.length === 0) return FALLBACK_BOARD;
+  return data as BoardItem[];
 }
