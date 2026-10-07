@@ -4,25 +4,29 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Tile } from "@/components/Tile";
 import { instagramUrl } from "@/lib/data";
-import { getTeam } from "@/lib/queries";
+import { getTeam, getTexts } from "@/lib/queries";
+import { lines } from "@/lib/texts";
 
 export const metadata: Metadata = { title: "Team" };
 
 export default async function TeamPage() {
-  const team = await getTeam();
+  const [team, texts] = await Promise.all([getTeam(), getTexts()]);
+  const t = texts.page_team;
 
   return (
     <>
       <SiteHeader current="/team" />
       <main>
         <section className="section section--hero">
-          <div className="mono">Team</div>
-          <h1 className="h-hero">Le persone dietro ogni set.</h1>
-          <p className="lead">
-            Un gruppo stabile di professionisti che lavora insieme produzione
-            dopo produzione: stessa direzione, stessa cura, per ogni brand sul
-            set.
-          </p>
+          <div className="mono anim-in">{t.kicker}</div>
+          <h1 className="h-hero">
+            {lines(t.title).map((line, i) => (
+              <span className="line" key={i}>
+                <span style={{ "--d": `${100 + i * 110}ms` } as React.CSSProperties}>{line}</span>
+              </span>
+            ))}
+          </h1>
+          <p className="lead anim-in" style={{ "--d": "400ms" } as React.CSSProperties}>{t.body}</p>
         </section>
 
         <section className="members">

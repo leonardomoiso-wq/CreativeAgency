@@ -136,7 +136,7 @@ export default function BrandPanel() {
       <div className="row row--between">
         <div className="mono">Accesso come {email}</div>
         <div className="row" style={{ gap: 12 }}>
-          {isAdmin && <Link href="/admin" className="btn btn--small">Gestione del sito</Link>}
+          {isAdmin && <Link href="/admin" className="btn btn--small">Media center</Link>}
           <button className="btn btn--ghost btn--small" onClick={() => db.auth.signOut()}>Esci</button>
         </div>
       </div>

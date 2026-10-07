@@ -17,7 +17,7 @@ Next.js (App Router) + Supabase (database, login, immagini). Pubblicazione su Ve
 | `/team` | Schede del team con bio, credits e Instagram personale |
 | `/portfolio` | Progetti filtrabili per styling, fotografia, produzioni condivise |
 | `/login` | Accesso via email con link, senza password |
-| `/admin` | Gestione: candidature e gruppi, bacheca, Open Call, portfolio, team |
+| `/admin` | Media center del team (con password): immagini per sezione, testi, candidature, Open Call, accessi |
 
 Finché il database è vuoto o non collegato, le pagine pubbliche mostrano contenuti
 segnaposto (tra parentesi quadre).
@@ -32,19 +32,30 @@ segnaposto (tra parentesi quadre).
 3. **Supabase, indirizzo del sito.** Authentication > URL Configuration: metti
    l'indirizzo Vercel in *Site URL* e aggiungi `https://IL-TUO-SITO/**` tra i
    *Redirect URLs*. Senza questo il link di login riporta all'indirizzo sbagliato.
-4. **Primo accesso.** Fai login da `/login`, poi esegui `supabase/make-admin.sql`
-   con la tua email per attivare la gestione.
+4. **Primo accesso al media center.** In Supabase > Authentication > Users >
+   *Add user* crea il tuo utente con email e password (spunta *Auto Confirm User*).
+   Poi esegui `supabase/make-admin.sql` con la tua email. Da quel momento entri da
+   `/admin` e puoi dare accesso al resto del team dalla scheda **Accessi**.
 
 ## Come lavora il team
 
-1. In `/admin` > **Bacheca** carichi location (con foto, città, disponibile sì/no),
-   agenzie, volti, crew e backstage. Più foto insieme diventano più schede.
+1. In `/admin` > **Immagini** scegli la sezione (location, agenzie, volti, crew,
+   backstage, portfolio per sezione, team) e trascini le foto nel riquadro. Ogni
+   foto diventa una scheda: l'etichetta si scrive direttamente sotto l'immagine,
+   gli altri dati in *Dettagli*. Si riordina trascinando le schede e si cambia una
+   foto trascinandone un'altra sopra. Le foto grandi vengono ridotte da sole.
+   In **Testi** si cambiano i testi del sito su tre livelli: occhiello, titolo, testo.
 2. Le candidature arrivano in **Candidature e gruppi**. Per ognuna imposti lo
    stato e scrivi un messaggio: il brand li vede nel suo pannello.
 3. Crei un **gruppo** (nome, concept, location, data) e ci assegni i brand.
    Da quel momento ognuno vede gli altri brand del gruppo e la location.
 4. Con lo stato **Moodboard** il brand può caricare i propri riferimenti; anche
    il team può aggiungerne dal gruppo.
+
+## Immagini d'esempio
+
+Finché il portfolio è vuoto, il sito usa le foto in `public/esempi/`. Appena
+carichi i tuoi lavori dal media center spariscono da sole.
 
 ## Copy
 

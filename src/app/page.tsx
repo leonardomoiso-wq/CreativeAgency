@@ -6,61 +6,8 @@ import { Marquee } from "@/components/Marquee";
 import { CountUp } from "@/components/CountUp";
 import { BoardCard } from "@/components/BoardCard";
 import { APPLICANT_LABEL, KIND_LABEL } from "@/lib/data";
-import { getBoard, getOpenCall, getProjects, getTeam } from "@/lib/queries";
-
-const STEPS = [
-  {
-    title: "Partiamo dalle location",
-    text: "Ogni giornata nasce da un luogo che abbiamo già visto, fotografato e bloccato. La location è il punto fermo: tutto il resto si costruisce intorno.",
-  },
-  {
-    title: "Ti candidi",
-    text: "Racconti chi sei, cosa porteresti sul set e quali location senti tue. Cinque minuti, nessun impegno.",
-  },
-  {
-    title: "Ti abbiniamo",
-    text: "Scegliamo brand che si completano in un total look: un solo brand per categoria, nessun concorrente diretto accanto a te.",
-  },
-  {
-    title: "Moodboard comune",
-    text: "Il gruppo costruisce la moodboard nel pannello: riferimenti, palette, pose. Ognuno ci mette i propri; lo styling li tiene insieme.",
-  },
-  {
-    title: "La giornata di shooting",
-    text: "Casting dalle agenzie con cui lavoriamo, styling, fotografo, make-up e hair. Ogni brand ha il proprio call time. Porti i capi o li spedisci.",
-  },
-  {
-    title: "Consegna",
-    text: "Immagini selezionate e ritoccate per ogni brand, più gli scatti di gruppo. Licenza d'uso scritta, per canali e durata.",
-  },
-];
-
-const CRITERIA = [
-  {
-    title: "Un'identità riconoscibile",
-    text: "Non contano le dimensioni: conta che i tuoi capi si riconoscano anche senza logo.",
-  },
-  {
-    title: "Capi pronti per il set",
-    text: "Campionario disponibile nella data dello shooting, in taglia campionario, da indossare e da restituire.",
-  },
-  {
-    title: "Complementarità",
-    text: "Cerchiamo brand che stiano bene accanto ad altri: abbigliamento, gioielli, borse, scarpe si completano in un unico look.",
-  },
-  {
-    title: "Affinità con la location",
-    text: "Il tuo stile deve dialogare con i luoghi disponibili. È il primo filtro della selezione.",
-  },
-  {
-    title: "Spirito di gruppo",
-    text: "Le immagini di gruppo vivono sui canali di tutti: tag reciproci e uscite coordinate fanno parte del patto.",
-  },
-  {
-    title: "Tempi rispettati",
-    text: "Capi, riferimenti e saldo arrivano nelle date concordate. Una giornata condivisa funziona solo se tutti sono puntuali.",
-  },
-];
+import { getBoard, getOpenCall, getProjects, getTeam, getTexts } from "@/lib/queries";
+import { lines } from "@/lib/texts";
 
 function statusLine(left: number, missing: number) {
   if (left === 0) return "Open Call al completo";
@@ -70,12 +17,16 @@ function statusLine(left: number, missing: number) {
 }
 
 export default async function Home() {
-  const [{ call, categories }, team, projects, board] = await Promise.all([
+  const [{ call, categories }, team, projects, board, t] = await Promise.all([
     getOpenCall(),
     getTeam(),
     getProjects(),
     getBoard(),
+    getTexts(),
   ]);
+  const steps = [1, 2, 3, 4, 5, 6].map((n) => t[`come_${n}`]);
+  const criteria = [1, 2, 3, 4, 5, 6].map((n) => t[`criterio_${n}`]);
+  const facts = [1, 2, 3].map((n) => t[`fatto_${n}`]);
 
   const total = categories.length;
   const booked = categories.filter((c) => c.taken).length;
@@ -87,7 +38,12 @@ export default async function Home() {
   const locations = board.filter((b) => b.kind === "location");
   const network = board.filter((b) => b.kind !== "location");
   const agencies = board.filter((b) => b.kind === "agenzia").map((b) => b.title);
-  const heroShots = locations.slice(0, 3);
+  // Il collage d'apertura usa il portfolio; senza foto, le location.
+  const withPhoto = projects.filter((p) => p.image_url);
+  const heroShots =
+    withPhoto.length >= 3
+      ? withPhoto.slice(0, 3).map((p) => ({ id: p.id, image_url: p.image_url, label: p.client || p.title }))
+      : locations.slice(0, 3).map((l) => ({ id: l.id, image_url: l.image_url, label: `${l.title} · ${l.city}` }));
 
   return (
     <>
@@ -97,10 +53,10 @@ export default async function Home() {
         <section className="section section--hero hero">
           <div className="hero__text">
             <div className="mono hero__kicker anim-in" style={{ "--d": "0ms" } as React.CSSProperties}>
-              Open Call {number} · Hai ricevuto il nostro invito? Sei nel posto giusto.
+              Open Call {number} · {t.hero.kicker}
             </div>
             <h1 className="h-hero">
-              {["Una location.", "Più brand.", "Un'unica storia."].map((line, i) => (
+              {lines(t.hero.title).map((line, i) => (
                 <span className="line" key={line}>
                   <span style={{ "--d": `${120 + i * 110}ms` } as React.CSSProperties}>
                     {line}
@@ -109,12 +65,7 @@ export default async function Home() {
               ))}
             </h1>
             <div className="row row--end anim-in" style={{ "--d": "520ms" } as React.CSSProperties}>
-              <p className="lead">
-                Organizziamo giornate di shooting in cui brand diversi scattano
-                insieme, nella stessa location, con lo stesso team. Ognuno porta
-                i propri capi; location, casting, styling e fotografia si
-                dividono.
-              </p>
+              <p className="lead">{t.hero.body}</p>
               <div className="hero__ctas">
                 <Link href="/candidatura" className="btn btn--accent">
                   Candida il tuo brand
@@ -128,8 +79,8 @@ export default async function Home() {
           <div className="hero__shots" aria-hidden="true">
             {heroShots.map((l, i) => (
               <div className="hero__shot" key={l.id ?? i} style={{ "--i": i } as React.CSSProperties}>
-                <Tile src={l.image_url} alt="" placeholder={`[LOCATION ${String(i + 1).padStart(2, "0")}]`} />
-                <span className="mono">{l.title} · {l.city}</span>
+                <Tile src={l.image_url} alt="" placeholder={`[FOTO ${String(i + 1).padStart(2, "0")}]`} />
+                <span className="mono">{l.label}</span>
               </div>
             ))}
           </div>
@@ -140,25 +91,20 @@ export default async function Home() {
         {/* ---------- il meccanismo, prima di tutto ---------- */}
         <section className="section how" id="come">
           <div className="how__aside">
-            <div className="mono" data-reveal>Il meccanismo</div>
-            <h2 className="h-section" data-reveal>
-              Come funziona, prima di tutto.
-            </h2>
-            <p className="muted" data-reveal>
-              Sei passaggi, dalla location alle immagini consegnate. Puoi
-              seguirli tutti dal tuo pannello brand, una volta candidato.
-            </p>
+            <div className="mono" data-reveal>{t.come.kicker}</div>
+            <h2 className="h-section" data-reveal>{t.come.title}</h2>
+            <p className="muted" data-reveal>{t.come.body}</p>
             <div className="how__progress" aria-hidden="true">
               <div />
             </div>
           </div>
           <ol className="how__steps">
-            {STEPS.map((s, i) => (
-              <li className="how__step" key={s.title} data-reveal>
+            {steps.map((s, i) => (
+              <li className="how__step" key={i} data-reveal>
                 <span className="how__num">{String(i + 1).padStart(2, "0")}</span>
                 <div>
                   <h3 className="h-card">{s.title}</h3>
-                  <p className="muted">{s.text}</p>
+                  <p className="muted">{s.body}</p>
                 </div>
               </li>
             ))}
@@ -169,13 +115,10 @@ export default async function Home() {
         <section className="section section--dark" id="location">
           <div className="row row--between">
             <div className="stack">
-              <div className="mono" data-reveal>Tutto parte da qui</div>
-              <h2 className="h-section" data-reveal>Location disponibili</h2>
+              <div className="mono" data-reveal>{t.location.kicker}</div>
+              <h2 className="h-section" data-reveal>{t.location.title}</h2>
             </div>
-            <p className="lead lead--narrow" data-reveal>
-              Luoghi che conosciamo di persona: luce, spazi, orari, permessi.
-              Nella candidatura scegli quelli in cui vedresti i tuoi capi.
-            </p>
+            <p className="lead lead--narrow" data-reveal>{t.location.body}</p>
           </div>
           <div className="loc-strip">
             {locations.map((l, i) => (
@@ -258,14 +201,10 @@ export default async function Home() {
         <section className="section" id="bacheca">
           <div className="row row--between">
             <div className="stack">
-              <div className="mono" data-reveal>La bacheca</div>
-              <h2 className="h-section" data-reveal>Conosciamo i luoghi e le persone.</h2>
+              <div className="mono" data-reveal>{t.bacheca.kicker}</div>
+              <h2 className="h-section" data-reveal>{t.bacheca.title}</h2>
             </div>
-            <p className="lead lead--narrow" data-reveal>
-              Agenzie di modelle, volti, crew, backstage: la rete con cui
-              lavoriamo ogni giornata. Non un elenco di contatti, ma persone
-              con cui abbiamo già scattato.
-            </p>
+            <p className="lead lead--narrow" data-reveal>{t.bacheca.body}</p>
           </div>
           {agencies.length > 0 && (
             <Marquee className="marquee--ghost" items={agencies} />
@@ -286,8 +225,8 @@ export default async function Home() {
         <section className="section section--rule" id="criteri">
           <div className="row row--between">
             <div className="stack">
-              <div className="mono" data-reveal>Criteri di selezione</div>
-              <h2 className="h-section" data-reveal>Chi cerchiamo.</h2>
+              <div className="mono" data-reveal>{t.criteri.kicker}</div>
+              <h2 className="h-section" data-reveal>{t.criteri.title}</h2>
             </div>
             <div className="chips" data-reveal>
               {Object.values(APPLICANT_LABEL).map((l) => (
@@ -296,40 +235,33 @@ export default async function Home() {
             </div>
           </div>
           <div className="criteria">
-            {CRITERIA.map((c, i) => (
+            {criteria.map((c, i) => (
               <div
                 className="criterion"
-                key={c.title}
+                key={i}
                 data-reveal
                 style={{ "--d": `${(i % 3) * 90}ms` } as React.CSSProperties}
               >
                 <span className="criterion__num">{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="h-step">{c.title}</h3>
-                <p className="muted">{c.text}</p>
+                <p className="muted">{c.body}</p>
               </div>
             ))}
           </div>
-          <p className="muted" data-reveal>
-            Non serve avere già un ufficio stampa o un e-commerce. Serve avere
-            capi veri e voglia di farli vedere bene.
-          </p>
+          <p className="muted" data-reveal>{t.criteri.body}</p>
         </section>
 
         <section className="section section--dark">
           <h2 className="h-statement" data-reveal>
-            Il costo si divide.
-            <br />
-            L&apos;identità no.
+            {lines(t.costo.title).map((l, i) => (
+              <span key={i} style={{ display: "block" }}>{l}</span>
+            ))}
           </h2>
           <div className="facts">
-            {[
-              ["Tempo tuo sul set", "Un call time dedicato, look costruiti sulla tua collezione."],
-              ["Scatti tuoi", "Immagini solo tue, più gli scatti di gruppo da condividere."],
-              ["Diritti chiari", "Licenza d'uso scritta: canali, durata, nessuna sorpresa."],
-            ].map(([t, d], i) => (
-              <div className="fact" key={t} data-reveal style={{ "--d": `${i * 90}ms` } as React.CSSProperties}>
-                <h3 className="h-step">{t}</h3>
-                <p>{d}</p>
+            {facts.map((f, i) => (
+              <div className="fact" key={i} data-reveal style={{ "--d": `${i * 90}ms` } as React.CSSProperties}>
+                <h3 className="h-step">{f.title}</h3>
+                <p>{f.body}</p>
               </div>
             ))}
           </div>
@@ -385,7 +317,7 @@ export default async function Home() {
           </div>
         </section>
       </main>
-      <SiteFooter title="La prossima giornata può partire dai tuoi capi." />
+      <SiteFooter title={t.footer_home.title} />
     </>
   );
 }

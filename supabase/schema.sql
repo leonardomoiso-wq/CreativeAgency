@@ -359,6 +359,30 @@ drop policy if exists "moodboard admin all" on public.moodboard_items;
 create policy "moodboard admin all" on public.moodboard_items
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+-- ---------- testi del sito e ordinamento ----------
+
+-- Ogni blocco di testo ha tre livelli di lettura: occhiello, titolo, testo.
+-- Un campo vuoto lascia sul sito il testo predefinito.
+create table if not exists public.site_texts (
+  key text primary key check (char_length(key) <= 80),
+  kicker text not null default '' check (char_length(kicker) <= 300),
+  title text not null default '' check (char_length(title) <= 500),
+  body text not null default '' check (char_length(body) <= 4000),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.projects add column if not exists position int not null default 0;
+
+grant select on public.site_texts to anon, authenticated;
+grant all on public.site_texts to authenticated;
+alter table public.site_texts enable row level security;
+
+drop policy if exists "texts public read" on public.site_texts;
+create policy "texts public read" on public.site_texts for select using (true);
+drop policy if exists "texts admin write" on public.site_texts;
+create policy "texts admin write" on public.site_texts
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
 -- ---------- contenuti iniziali (solo se le tabelle sono vuote) ----------
 
 do $$

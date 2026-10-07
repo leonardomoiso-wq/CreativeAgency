@@ -1,5 +1,6 @@
 import { cacheLife } from "next/cache";
 import { publicClient } from "./supabase";
+import { mergeTexts, type TextBlock } from "./texts";
 import type {
   BoardItem,
   BoardKind,
@@ -88,14 +89,22 @@ const FALLBACK_CREDIT: Record<ProjectKind, string> = {
   shared: "Styling [NOME STYLIST], foto [NOME FOTOGRAFO]",
 };
 
-const FALLBACK_PROJECTS: Project[] = FALLBACK_KINDS.map((kind) => ({
+// Immagini d'esempio in public/esempi, finché il portfolio è vuoto.
+const FALLBACK_IMAGES = [
+  "/esempi/editoriale-rose.webp",
+  "/esempi/editoriale-luce.webp",
+  "/esempi/editoriale-foulard.webp",
+  "/esempi/editoriale-cortile.webp",
+];
+
+const FALLBACK_PROJECTS: Project[] = FALLBACK_KINDS.map((kind, i) => ({
   id: null,
   title: "[TITOLO PROGETTO]",
   client: "[BRAND / TESTATA]",
   year: "[ANNO]",
   kind,
   credit: FALLBACK_CREDIT[kind],
-  image_url: null,
+  image_url: FALLBACK_IMAGES[i] ?? null,
 }));
 
 const FALLBACK_BOARD_SPEC: [BoardKind, string, string][] = [
@@ -176,6 +185,7 @@ export async function getProjects(): Promise<Project[]> {
   const { data } = await db
     .from("projects")
     .select("*")
+    .order("position")
     .order("created_at", { ascending: false });
   if (!data || data.length === 0) return FALLBACK_PROJECTS;
   return data as Project[];
@@ -193,4 +203,13 @@ export async function getBoard(): Promise<BoardItem[]> {
     .order("created_at", { ascending: false });
   if (!data || data.length === 0) return FALLBACK_BOARD;
   return data as BoardItem[];
+}
+
+export async function getTexts(): Promise<Record<string, TextBlock>> {
+  "use cache";
+  cacheLife("minutes");
+  const db = publicClient();
+  if (!db) return mergeTexts([]);
+  const { data } = await db.from("site_texts").select("key, kicker, title, body");
+  return mergeTexts(data ?? []);
 }

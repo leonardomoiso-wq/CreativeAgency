@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const WORDS = ["Location", "Brand", "Moodboard", "Casting", "Shooting"];
@@ -10,7 +11,9 @@ const WORDS = ["Location", "Brand", "Moodboard", "Casting", "Shooting"];
  */
 export function Intro({ name }: { name: string }) {
   const [gone, setGone] = useState(false);
-  if (gone) return null;
+  const path = usePathname();
+  // niente intro nelle aree di lavoro
+  if (gone || path.startsWith("/admin") || path.startsWith("/brand")) return null;
 
   return (
     <div

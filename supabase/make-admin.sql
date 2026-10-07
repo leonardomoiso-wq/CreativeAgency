@@ -1,5 +1,5 @@
 -- Dà l'accesso alla gestione del sito a un account.
--- 1. Fai login una volta sul sito con la tua email (pagina /login).
+-- 1. Crea il tuo utente in Supabase > Authentication > Users > Add user (email e password).
 -- 2. Sostituisci l'email qui sotto ed esegui in Supabase > SQL Editor.
 
 update public.profiles

@@ -1,4 +1,4 @@
-// Dati dello studio: da sostituire con quelli veri.
-export const SITE_NAME = "[NOME STUDIO]";
+// Dati dello studio. Il nome è provvisorio; email e P. IVA da sostituire.
+export const SITE_NAME = "Collabspace";
 export const CONTACT_EMAIL = "[EMAIL]";
-export const LEGAL_LINE = "[NOME STUDIO] · [P. IVA]";
+export const LEGAL_LINE = "Collabspace · [P. IVA]";

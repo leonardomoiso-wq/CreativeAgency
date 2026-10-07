@@ -48,7 +48,7 @@ export default function LoginPage() {
           <form className="form" onSubmit={submit}>
             <p className="muted">
               Usa l&apos;email con cui ti sei candidato: ricevi un link per
-              entrare, senza password. Lo stesso accesso vale per il team.
+              entrare, senza password.
             </p>
             <div className="field">
               <label htmlFor="login-email">Email</label>
@@ -66,6 +66,9 @@ export default function LoginPage() {
             </button>
             <Link href="/candidatura" className="link">
               Non ti sei ancora candidato? Inizia da qui
+            </Link>
+            <Link href="/admin" className="link">
+              Sei del team? Entra nel media center con la password
             </Link>
             {status === "error" && (
               <p className="notice notice--error" role="alert">
