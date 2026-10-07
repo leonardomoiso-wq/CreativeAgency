@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SITE_NAME } from "@/lib/site";
-import { browserClient } from "@/lib/supabase";
+import { browserClient, missingEnv } from "@/lib/supabase";
 import { MediaCenter } from "@/components/admin/MediaCenter";
 import { TextsAdmin } from "@/components/admin/TextsAdmin";
 import { ApplicationsAdmin } from "@/components/admin/ApplicationsAdmin";
@@ -62,9 +62,17 @@ export default function MediaCenterPage() {
   if (!db) {
     return (
       <Shell>
-        <p className="notice notice--error">
-          Supabase non è configurato: mancano le variabili d&apos;ambiente.
-        </p>
+        <div className="notice notice--error stack">
+          <p>
+            Supabase non è collegato: su Vercel mancano{" "}
+            {missingEnv.map((v) => <code key={v}>{v} </code>)}
+          </p>
+          <p>
+            Aggiungile in Vercel &gt; Settings &gt; Environment Variables, per
+            Production e Preview, poi rifai il deploy: il sito le legge solo
+            durante la build.
+          </p>
+        </div>
       </Shell>
     );
   }
